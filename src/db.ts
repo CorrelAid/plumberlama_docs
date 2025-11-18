@@ -1,11 +1,10 @@
-import { SQL } from "bun";
+import postgres from 'postgres';
 
-const pg = new SQL({
-    url: import.meta.env.POSTGRES_URL,
-    connectionTimeout: 30, // Timeout when establishing new connections
-    idleTimeout: 30, // Close idle connections after 30s
-    maxLifetime: 0, // Connection lifetime in seconds (0 = forever)
-    max: 2, // Maximum connections in pool
+const pg = postgres(import.meta.env.POSTGRES_URL, {
+    connect_timeout: 30,
+    idle_timeout: 30,
+    max_lifetime: 0,
+    max: 2,
 });
 
 export default pg;
