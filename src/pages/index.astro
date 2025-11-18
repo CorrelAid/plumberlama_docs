@@ -7,7 +7,8 @@ export const prerender = false;
 
 import { getLiveCollection } from "astro:content";
 import type { Variable } from "@/loaders.ts";
-import { groupBy, sortBy } from "lodash";
+import pkg from "lodash";
+const { groupBy, sortBy } = pkg;
 
 const { entries: allVariables, variablesError } =
     await getLiveCollection("variables");
