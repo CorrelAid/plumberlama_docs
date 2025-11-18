@@ -33,7 +33,7 @@ export const getTitleConfig = (
     title: string,
     subtitle: string
 ) => ({
-    text: metadata.label || title,
+    text: metadata?.label || title,
     subtext: subtitle,
     left: "center",
     textStyle: {

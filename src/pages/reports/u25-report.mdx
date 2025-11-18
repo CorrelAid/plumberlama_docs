@@ -7,70 +7,70 @@ import BarChart from "@/components/BarChart.svelte";
 import Histogram from "@/components/Histogram.svelte";
 import { getLiveCollection } from "astro:content";
 
-export const prerender = false;
-
 export const { entries: allVariables } = await getLiveCollection("variables");
 export const { entries: allDistributions } = await getLiveCollection("distributions");
 export const { entries: allCategorical } = await getLiveCollection("categorical");
 
 export const distributionsByVariable = new Map(
-  (allDistributions || []).map((d) => [String(d.data.variable_id), d.data])
+    (allDistributions || []).map((d) => [String(d.data.variable_id), d.data])
 );
 
 export const categoricalByVariable = new Map(
-  (allCategorical || []).map((c) => [String(c.data.variable_id), c.data])
+    (allCategorical || []).map((c) => [String(c.data.variable_id), c.data])
 );
 
 export const variablesById = new Map(
-  (allVariables || []).map((v) => [String(v.data.id), v.data])
+    (allVariables || []).map((v) => [String(v.data.id), v.data])
 );
 
 export function getDistribution(variableId) {
-  return distributionsByVariable.get(variableId);
+    return distributionsByVariable.get(variableId);
 }
 
+
+
 export function getCategorical(variableId) {
-  return categoricalByVariable.get(variableId);
+    return categoricalByVariable.get(variableId);
 }
 
 export function getVariable(variableId) {
-  return variablesById.get(variableId);
+    return variablesById.get(variableId);
 }
 
 export function getMultipleChoiceCombined(questionId, itemIds) {
-  const categories = itemIds.map((id) => {
-    const meta = getVariable(id);
-    const cat = getCategorical(id);
+    const categories = itemIds.map((id) => {
+        const meta = getVariable(id);
+        const cat = getCategorical(id);
 
-    if (!cat || !meta) {
-      return {
-        value: id,
-        count: 0,
-      };
-    }
+        if (!cat || !meta) {
+            return {
+                value: id,
+                count: 0,
+            };
+        }
 
-    // Prefer the 'true' category (selected), fall back to '1', otherwise 0
-    const selected =
-      cat.categories.find((c) => String(c.value) === "true") ??
-      cat.categories.find((c) => String(c.value) === "1") ??
-      { count: 0 };
+        // Prefer the 'true' category (selected), fall back to '1', otherwise 0
+        const selected =
+            cat.categories.find((c) => String(c.value) === "true") ??
+            cat.categories.find((c) => String(c.value) === "1") ??
+            { count: 0 };
+
+        return {
+            value: meta.label || meta.question_text || id,
+            count: selected.count ?? 0,
+        };
+    });
+
+    const total_count = categories.reduce(
+        (max, c) => Math.max(max, c.count),
+        0
+    );
 
     return {
-      value: meta.label || meta.question_text || id,
-      count: selected.count ?? 0,
+        variable_id: questionId,
+        categories,
+        total_count,
     };
-  });
-
-  const total_count = categories.reduce(
-    (max, c) => Math.max(max, c.count),
-    0
-  );
-
-  return {
-    variable_id: questionId,
-    categories,
-    total_count,
-  };
 }
 
 export const availableVariableIds = Array.from(variablesById.keys()).sort();
@@ -78,13 +78,15 @@ export const availableCategoricalIds = Array.from(categoricalByVariable.keys()).
 export const availableDistributionIds = Array.from(distributionsByVariable.keys()).sort();
 
 export function getMultipleChoiceVariableIds(prefix) {
-  const withUnderscore = prefix.endsWith("_") ? prefix : `${prefix}_`;
-  return availableCategoricalIds.filter((id) => id.startsWith(withUnderscore));
+    const withUnderscore = prefix.endsWith("_") ? prefix : `${prefix}_`;
+    return availableCategoricalIds.filter((id) => id.startsWith(withUnderscore));
 }
 
-export const q3Items  = getMultipleChoiceVariableIds("Q3");
-export const q8Items  = getMultipleChoiceVariableIds("Q8"); 
+export const q3Items = getMultipleChoiceVariableIds("Q3");
+export const q8Items = getMultipleChoiceVariableIds("Q8");  
 export const q16Items = getMultipleChoiceVariableIds("Q16"); 
+
+
 
 <BaseLayout title="[U25] Peer Engagement Report">
 
@@ -159,7 +161,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getCategorical("Q2")}
     metadata={getVariable("Q2")}
     title="Dauer des Engagements"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -170,7 +172,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getCategorical("Q6")}
     metadata={getVariable("Q6")}
     title="Weitere Ehrenämter"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -181,7 +183,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getCategorical("Q15")}
     metadata={getVariable("Q15")}
     title="Standort"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -192,7 +194,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getMultipleChoiceCombined("Q16", q16Items)}
     metadata={q16Items[0] ? getVariable(q16Items[0]) : undefined}
     title="Geschlecht"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -203,7 +205,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getDistribution("Q17")}
     metadata={getVariable("Q17")}
     title="Altersverteilung"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -214,7 +216,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getCategorical("Q18")}
     metadata={getVariable("Q18")}
     title="Haupttätigkeit"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -225,7 +227,7 @@ Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
     data={getCategorical("Q19")}
     metadata={getVariable("Q19")}
     title="Ausbildung im Bereich Soziales/Psychologie"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -242,7 +244,7 @@ Diese Sektion untersucht die Motivationen der Peers für ihr Engagement.
     data={getMultipleChoiceCombined("Q8", q8Items)}
     metadata={q8Items[0] ? getVariable(q8Items[0]) : undefined}
     title="Motivationen (kombinierte Mehrfachauswahl)"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -261,7 +263,7 @@ Diese Sektion untersucht die Motivationen der Peers für ihr Engagement.
     data={getCategorical("Q10")}
     metadata={getVariable("Q10")}
     title="Verbundenheit mit anderen Peers"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -286,7 +288,7 @@ Diese Sektion analysiert die Wege, über die Peers zu [U25] gekommen sind.
     data={getMultipleChoiceCombined("Q3", q3Items)}
     metadata={q3Items[0] ? getVariable(q3Items[0]) : undefined}
     title="Akquisewege (Mehrfachauswahl kombiniert)"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -311,7 +313,7 @@ Diese Sektion betrachtet den Aufwand und die Belastung des Engagements.
     data={getCategorical("Q5")}
     metadata={getVariable("Q5")}
     title="Aktuelles Befinden"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 
@@ -322,7 +324,7 @@ Diese Sektion betrachtet den Aufwand und die Belastung des Engagements.
     data={getDistribution("Q7_zeit")}
     metadata={getVariable("Q7_zeit")}
     title="Zeitaufwand pro Monat (Stundenanzahl)"
-    client:only="svelte"
+    client:load
   />
 </VizBlock>
 

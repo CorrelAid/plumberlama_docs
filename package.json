@@ -16,6 +16,7 @@
     "@fontsource-variable/lora": "^5.2.8",
     "@fontsource-variable/manrope": "^5.2.8",
     "@fontsource-variable/spline-sans": "^5.2.8",
+    "@isaacs/ttlcache": "^2.1.1",
     "astro": "5.15.9",
     "echarts": "^6.0.0",
     "lodash": "^4.17.21",

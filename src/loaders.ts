@@ -1,5 +1,6 @@
 import type { LiveLoader } from 'astro/loaders';
 import pg from "@/db.ts";
+import { TTLCache } from '@isaacs/ttlcache';
 
 const table_prefix = import.meta.env.SURVEY_ID;
 
@@ -7,6 +8,40 @@ const table_prefix = import.meta.env.SURVEY_ID;
 const metadataTable      = pg(`${table_prefix}_metadata`);
 const distributionsTable = pg(`${table_prefix}_distributions`);
 const categoricalTable   = pg(`${table_prefix}_categorical`);
+
+// ---------- CACHES ----------
+
+// variables
+const variableAllCache = new TTLCache<string, any[]>({
+  max: 1,
+  ttl: 60_000,
+});
+const variableByIdCache = new TTLCache<string, any>({
+  max: 1000,
+  ttl: 60_000,
+});
+
+// distributions
+const distAllCache = new TTLCache<string, any[]>({
+  max: 1,
+  ttl: 60_000,
+});
+const distByVarCache = new TTLCache<string, any[]>({
+  max: 1000,
+  ttl: 60_000,
+});
+
+// categorical
+const catAllCache = new TTLCache<string, any[]>({
+  max: 1,
+  ttl: 60_000,
+});
+const catByVarCache = new TTLCache<string, any[]>({
+  max: 1000,
+  ttl: 60_000,
+});
+
+// ---------- TYPES ----------
 
 interface Variable {
   question_id: number;
@@ -41,15 +76,20 @@ interface Distribution {
   max: number | null;
 }
 
-/**
- * variableLoader: unchanged behaviour - returns metadata rows
- */
-export function variableLoader(config: { apiKey: string }): LiveLoader<Variable> {
+// ---------- VARIABLE LOADER ----------
+
+export function variableLoader(_config: { apiKey: string }): LiveLoader<Variable> {
   return {
     name: 'variableLoader',
+
     loadCollection: async () => {
       try {
-        const rows = await pg`SELECT * FROM ${metadataTable}`;
+        const cacheKey = 'all';
+        let rows = variableAllCache.get(cacheKey);
+        if (!rows) {
+          rows = await pg`SELECT * FROM ${metadataTable}`;
+          variableAllCache.set(cacheKey, rows);
+        }
 
         return {
           entries: rows.map((variables: any) => ({
@@ -63,12 +103,20 @@ export function variableLoader(config: { apiKey: string }): LiveLoader<Variable>
         };
       }
     },
+
     loadEntry: async ({ filter }) => {
       try {
-        const [row] = await pg`
-          SELECT * FROM ${metadataTable}
-          WHERE id = ${filter.id}
-        `;
+        const id = filter.id as string;
+        let row = variableByIdCache.get(id);
+
+        if (!row) {
+          const result = await pg`
+            SELECT * FROM ${metadataTable}
+            WHERE id = ${id}
+          `;
+          row = result[0];
+          if (row) variableByIdCache.set(id, row);
+        }
 
         if (!row) {
           return {
@@ -88,6 +136,8 @@ export function variableLoader(config: { apiKey: string }): LiveLoader<Variable>
     },
   };
 }
+
+// ---------- DISTRIBUTION LOADER ----------
 
 const toNumberOrNull = (v: any): number | null =>
   v === null || v === undefined ? null : Number(v);
@@ -113,7 +163,11 @@ function rowToDistribution(r: any): Distribution {
 }
 
 async function queryAllgroupBys(): Promise<any[]> {
-  return (await pg`
+  const key = 'all';
+  const cached = distAllCache.get(key);
+  if (cached) return cached;
+
+  const rows = (await pg`
     SELECT
       variable_id,
       COUNT(value) FILTER (WHERE value IS NOT NULL) AS n,
@@ -130,10 +184,16 @@ async function queryAllgroupBys(): Promise<any[]> {
     FROM ${distributionsTable}
     GROUP BY variable_id
   `) as any[];
+
+  distAllCache.set(key, rows);
+  return rows;
 }
 
 async function querygroupByFor(variableId: string): Promise<any[]> {
-  return (await pg`
+  const cached = distByVarCache.get(variableId);
+  if (cached) return cached;
+
+  const rows = (await pg`
     SELECT
       variable_id,
       COUNT(value) FILTER (WHERE value IS NOT NULL) AS n,
@@ -151,6 +211,9 @@ async function querygroupByFor(variableId: string): Promise<any[]> {
     WHERE variable_id = ${variableId}
     GROUP BY variable_id
   `) as any[];
+
+  distByVarCache.set(variableId, rows);
+  return rows;
 }
 
 export function distributionLoader(_config: { apiKey: string }): LiveLoader<Distribution> {
@@ -197,6 +260,8 @@ export function distributionLoader(_config: { apiKey: string }): LiveLoader<Dist
   };
 }
 
+// ---------- CATEGORICAL LOADER ----------
+
 interface Categorical {
   variable_id: string;
   value: string;
@@ -214,7 +279,11 @@ interface CategoricalData {
 }
 
 async function queryAllCategorical(): Promise<any[]> {
-  return (await pg`
+  const key = 'all';
+  const cached = catAllCache.get(key);
+  if (cached) return cached;
+
+  const rows = (await pg`
     SELECT
       variable_id,
       value,
@@ -224,10 +293,16 @@ async function queryAllCategorical(): Promise<any[]> {
     GROUP BY variable_id, value
     ORDER BY variable_id, count DESC
   `) as any[];
+
+  catAllCache.set(key, rows);
+  return rows;
 }
 
 async function queryCategoricalFor(variableId: string): Promise<any[]> {
-  return (await pg`
+  const cached = catByVarCache.get(variableId);
+  if (cached) return cached;
+
+  const rows = (await pg`
     SELECT
       variable_id,
       value,
@@ -237,6 +312,9 @@ async function queryCategoricalFor(variableId: string): Promise<any[]> {
     GROUP BY variable_id, value
     ORDER BY count DESC
   `) as any[];
+
+  catByVarCache.set(variableId, rows);
+  return rows;
 }
 
 function rowsToCategoricalData(rows: any[]): CategoricalData {
@@ -266,7 +344,7 @@ export function categoricalLoader(_config: { apiKey: string }): LiveLoader<Categ
   return {
     name: 'categoricalLoader',
 
-    loadCollection: async () => {
+        loadCollection: async () => {
       try {
         const rows = await queryAllCategorical();
 

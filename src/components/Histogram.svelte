@@ -9,13 +9,8 @@
         ToolboxComponent,
     } from "echarts/components";
     import { CanvasRenderer } from "echarts/renderers";
-    import {
-        range,
-        min as lodashMin,
-        max as lodashMax,
-        countBy,
-        floor,
-    } from "lodash";
+    import pkg from 'lodash';
+    const {range, countBy, floor} = pkg;
     import {
         trimText,
         getBaseChartConfig,
