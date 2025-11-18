@@ -1,0 +1,265 @@
+---
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/lora";
+import BaseHead from "@/layouts/BaseHead.astro";
+import Footer from "@/layouts/Footer.astro";
+
+const { title, frontmatter } = Astro.props;
+const pageTitle = frontmatter?.title || title;
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <BaseHead title={pageTitle} />
+    </head>
+    <body>
+        <header>
+            <div class="header-content">
+                <a href="/" class="logo-link">
+                    <img src="/logo.svg" alt="CDL Logo" class="logo" />
+                </a>
+                <nav>
+                    <!-- <a href="/variable-overview">Variable Overview</a> -->
+                </nav>
+            </div>
+        </header>
+        <div class="container">
+            <main>
+                <slot />
+            </main>
+        </div>
+        <!-- <Footer /> -->
+    </body><style>
+        /* ===========================
+           RESET
+           =========================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ===========================
+           TYPOGRAPHY
+           =========================== */
+
+        /* Font Families */
+        body {
+            font-family: "Lora", sans-serif;
+        }
+
+        h1,
+        :global(h2),
+        :global(h3),
+        :global(h4),
+        :global(h5),
+        :global(h6) {
+            font-family: "Manrope", sans-serif;
+        }
+
+        /* Colors */
+        body {
+            background-color: #8bb8ff;
+            color: #86185f;
+        }
+
+        /* Line Heights */
+        body {
+            line-height: 1.6;
+        }
+
+        h1,
+        :global(h2),
+        :global(h3),
+        :global(h4),
+        :global(h5),
+        :global(h6) {
+            line-height: 1.2;
+        }
+
+        /* Font Sizes - Fluid Typography */
+        body {
+            font-size: clamp(16px, 1rem + 0.5vw, 17px);
+        }
+
+        h1 {
+            font-size: clamp(30px, 2rem + 2vw, 40px);
+        }
+
+        :global(h2) {
+            font-size: clamp(24px, 1.625rem + 1vw, 30px);
+        }
+
+        :global(h3) {
+            font-size: clamp(20px, 1.375rem + 0.5vw, 24px);
+        }
+
+        :global(small),
+        :global(.caption) {
+            font-size: clamp(15px, 0.9375rem + 0.5vw, 18px);
+        }
+
+        /* Spacing */
+        h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        :global(h2) {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        :global(h3) {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        :global(p) {
+            margin-bottom: 1rem;
+            max-width: 75ch;
+        }
+
+        :global(ul, ol) {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            max-width: 75ch;
+        }
+
+        /* Table Layout */
+        :global(table) {
+            width: 100%;
+            max-width: 1000px;
+            overflow-x: auto;
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            :global(table) {
+                display: table;
+            }
+        }
+
+        :global(th, td) {
+            padding: 0.8rem;
+            text-align: left;
+            background-color: #ffffff;
+        }
+
+        :global(td) {
+            border: 1.5px solid #86185f;
+        }
+
+        :global(th) {
+            background-color: #86185f;
+            color: #ffffff;
+        }
+
+        /* ===========================
+           LAYOUT COMPONENTS
+           =========================== */
+        header {
+            background-color: #8bb8ff;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 14px 0 rgba(83, 137, 223, 0.4);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #86185f;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #5a0f3f;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        main {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ===========================
+           RESPONSIVE BREAKPOINTS
+           =========================== */
+
+        /* Extra small devices (< 576px) */
+        @media (max-width: 575px) {
+            .container {
+                padding: 0.75rem;
+            }
+
+            :global(table) {
+                font-size: 16px;
+            }
+        }
+
+        /* Small devices (≥ 576px) */
+        @media (min-width: 576px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* Medium devices (≥ 768px) */
+        @media (min-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Large devices (≥ 992px) */
+        @media (min-width: 992px) {
+            .container {
+                padding: 2rem;
+            }
+        }
+
+        /* Extra large devices (≥ 1200px) */
+        @media (min-width: 1200px) {
+            .container {
+                padding: 2.5rem;
+            }
+        }
+    </style>
+</html>

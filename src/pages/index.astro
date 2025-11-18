@@ -1,16 +1,202 @@
 ---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Admotion from "@/components/Admotion.astro";
+import ModalCell from "@/components/ModalCell.svelte";
 
+export const prerender = false;
+
+import { getLiveCollection } from "astro:content";
+import type { Variable } from "@/loaders.ts";
+import { groupBy, sortBy } from "lodash";
+
+const { entries: allVariables, variablesError } =
+    await getLiveCollection("variables");
+if (variablesError) {
+    console.error(variablesError.message);
+}
+
+const { entries: allDistributions, error } =
+    await getLiveCollection("distributions");
+if (error) {
+    console.error(error.message);
+}
+
+const { entries: allCategorical, categoricalError } =
+    await getLiveCollection("categorical");
+if (categoricalError) {
+    console.error(categoricalError.message);
+}
+console.log(JSON.stringify(allCategorical, null, 2))
+
+const distributionsByVariable = new Map<string, any>(
+    (allDistributions || []).map((d: any) => [
+        String(d.data.variable_id),
+        d.data,
+    ]),
+);
+
+const categoricalByVariable = new Map<string, any>(
+    (allCategorical || []).map((c: any) => [
+        String(c.data.variable_id),
+        c.data,
+    ]),
+);
+
+// Group and sort by question_id
+const sortedQuestions = sortBy(
+    Object.entries(groupBy(allVariables, (v: any) => v.data.question_id)),
+    [
+        ([id]: [string]) => Number(id),
+        ([_, entries]: [string, any[]]) => entries[0].data.question_position,
+    ],
+);
+
+const columnsByType: Record<string, string[]> = {
+    scale: ["Variable", "Data Type", "Range", "Anonymization Type"],
+    matrix: ["Variable", "Label", "Data Type", "Range", "Anonymization Type"],
+    single_choice: ["Variable", "Data Type", "Possible Values", "Anonymization Type"],
+    input_single_singleline: ["Variable", "Data Type", "Anonymization Type"],
+    input_single_multiline: ["Variable", "Data Type", "Anonymization Type"],
+};
+
+function getColumnsForType(questionType: string) {
+    if (columnsByType[questionType]) return columnsByType[questionType];
+    if (
+        questionType.startsWith("input_") ||
+        questionType.startsWith("multiple_choice")
+    ) {
+        return ["Variable", "Label", "Data Type", "Anonymization Type"];
+    }
+    return ["Variable", "Label", "Data Type", "Anonymization Type"];
+}
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout title="Overview">
+    <Admotion>
+        <p>
+            Use your browsers search function (Ctrl+F) to search for Variables.
+        </p>
+    </Admotion>
+
+    <div class="questions-overview">
+        {
+            sortedQuestions.map(([_, entries]: [string, any[]]) => {
+                const firstVar = entries[0].data;
+                const questionText = firstVar.question_text;
+                const questionType = firstVar.question_type;
+
+                // clone columns array so we don't mutate the shared definition
+                const columns = [...getColumnsForType(questionType)];
+
+                // If any variable in this question has a distribution entry, add a Mean column
+                const hasDistribution = entries.some((e) =>
+                    distributionsByVariable.has(String(e.data.id)),
+                );
+
+                return (
+                    <section class="question">
+                        <h3>
+                            {firstVar.question_id}: {questionText}
+                        </h3>
+                        <p>
+                            <strong>Type:</strong> {questionType}
+                        </p>
+                        <p>
+                            <strong>Variables:</strong> {entries.length}
+                        </p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    {columns.map((col) => (
+                                        <th>{col}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {entries.map((entry) => {
+                                    const v = entry.data as Variable;
+                                    const dist = distributionsByVariable.get(
+                                        String(v.id),
+                                    );
+                                    const cat = categoricalByVariable.get(
+                                        String(v.id),
+                                    );
+
+                                    // build the content for the Variable column (no <td> here)
+                                    let titleContent;
+                                    if (dist) {
+                                        titleContent = (
+                                            <ModalCell
+                                                title={String(v.id)}
+                                                type="dist"
+                                                data={dist}
+                                                metadata={v}
+                                                client:only="svelte"
+                                            />
+                                        );
+                                    } else if (cat) {
+                                        titleContent = (
+                                            <ModalCell
+                                                title={String(v.id)}
+                                                type="cat"
+                                                data={cat}
+                                                metadata={v}
+                                                client:only="svelte"
+                                            />
+                                        );
+                                    } else {
+                                        titleContent = v.id;
+                                    }
+
+                                    return (
+                                        <tr>
+                                            {columns.includes("Variable") && (
+                                                <td>{titleContent}</td>
+                                            )}
+                                            {columns.includes("Label") && (
+                                                <td>{v.label || ""}</td>
+                                            )}
+                                            {columns.includes("Data Type") && (
+                                                <td>
+                                                    {v.schema_variable_type}
+                                                </td>
+                                            )}
+                                            {columns.includes("Range") && (
+                                                <td>
+                                                    {v.range_min != null &&
+                                                    v.range_max != null
+                                                        ? `${v.range_min}-${v.range_max}`
+                                                        : ""}
+                                                </td>
+                                            )}
+                                            {columns.includes(
+                                                "Possible Values",
+                                            ) && (
+                                                <td>
+                                                    {v.possible_values_labels?.join(
+                                                        ", ",
+                                                    ) || ""}
+                                                </td>
+                                            )}
+                                            {columns.includes("Anonymization Type") && (
+                                                <td>
+                                                    {v.anonymization_type}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </section>
+                );
+            })
+        }
+    </div>
+</BaseLayout>
+<style>
+    .question {
+        margin-bottom: 3rem;
+    }
+</style>

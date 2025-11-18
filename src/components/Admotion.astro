@@ -1,0 +1,31 @@
+---
+interface Props {
+    icon?: string;
+}
+
+const { icon = "ℹ️" } = Astro.props;
+---
+
+<div class="admotion">
+    <div class="admotion-header">{icon}</div>
+    <div class="admotion-inner">
+        <slot />
+    </div>
+</div>
+
+<style>
+    .admotion {
+        width: max-content;
+        border-top-left-radius: 10px;
+    }
+    .admotion-header {
+        padding: 10px;
+        background-color: #d4e5a2;
+        border-top-left-radius: 10px;
+    }
+
+    .admotion-inner {
+        padding: 10px;
+        background-color: #ffff;
+    }
+</style>
