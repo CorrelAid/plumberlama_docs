@@ -1,6 +1,6 @@
 ---
-import "@fontsource-variable/manrope";
-import "@fontsource-variable/lora";
+import '@fontsource-variable/spline-sans';
+import "@fontsource-variable/inter";
 import BaseHead from "@/layouts/BaseHead.astro";
 import Footer from "@/layouts/Footer.astro";
 
@@ -21,7 +21,8 @@ const pageTitle = frontmatter?.title || title;
                     <img src="/logo.svg" alt="CDL Logo" class="logo" />
                 </a>
                 <nav>
-                    <!-- <a href="/variable-overview">Variable Overview</a> -->
+                    <a href="/">Variable Overview</a>
+                    <a href="/reports/u25-report">Report</a>
                 </nav>
             </div>
         </header>
@@ -47,7 +48,7 @@ const pageTitle = frontmatter?.title || title;
 
         /* Font Families */
         body {
-            font-family: "Lora", sans-serif;
+            font-family: "Inter", sans-serif;
         }
 
         h1,
@@ -56,7 +57,7 @@ const pageTitle = frontmatter?.title || title;
         :global(h4),
         :global(h5),
         :global(h6) {
-            font-family: "Manrope", sans-serif;
+            font-family: 'Spline Sans Variable', sans-serif;
         }
 
         /* Colors */
@@ -201,10 +202,12 @@ const pageTitle = frontmatter?.title || title;
             color: #86185f;
             font-weight: 500;
             transition: color 0.2s;
+            font-family: "Manrope Variable", "Manrope", sans-serif;
         }
 
         nav a:hover {
             color: #5a0f3f;
+            text-decoration: underline;
         }
 
         .container {

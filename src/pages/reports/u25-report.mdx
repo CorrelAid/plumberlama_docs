@@ -1,0 +1,374 @@
+---
+title: "[U25] Report"
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import VizBlock from "@/components/VizBlock.astro";
+import BarChart from "@/components/BarChart.svelte";
+import Histogram from "@/components/Histogram.svelte";
+import { getLiveCollection } from "astro:content";
+
+export const prerender = false;
+
+export const { entries: allVariables } = await getLiveCollection("variables");
+export const { entries: allDistributions } = await getLiveCollection("distributions");
+export const { entries: allCategorical } = await getLiveCollection("categorical");
+
+export const distributionsByVariable = new Map(
+  (allDistributions || []).map((d) => [String(d.data.variable_id), d.data])
+);
+
+export const categoricalByVariable = new Map(
+  (allCategorical || []).map((c) => [String(c.data.variable_id), c.data])
+);
+
+export const variablesById = new Map(
+  (allVariables || []).map((v) => [String(v.data.id), v.data])
+);
+
+export function getDistribution(variableId) {
+  return distributionsByVariable.get(variableId);
+}
+
+export function getCategorical(variableId) {
+  return categoricalByVariable.get(variableId);
+}
+
+export function getVariable(variableId) {
+  return variablesById.get(variableId);
+}
+
+export function getMultipleChoiceCombined(questionId, itemIds) {
+  const categories = itemIds.map((id) => {
+    const meta = getVariable(id);
+    const cat = getCategorical(id);
+
+    if (!cat || !meta) {
+      return {
+        value: id,
+        count: 0,
+      };
+    }
+
+    // Prefer the 'true' category (selected), fall back to '1', otherwise 0
+    const selected =
+      cat.categories.find((c) => String(c.value) === "true") ??
+      cat.categories.find((c) => String(c.value) === "1") ??
+      { count: 0 };
+
+    return {
+      value: meta.label || meta.question_text || id,
+      count: selected.count ?? 0,
+    };
+  });
+
+  const total_count = categories.reduce(
+    (max, c) => Math.max(max, c.count),
+    0
+  );
+
+  return {
+    variable_id: questionId,
+    categories,
+    total_count,
+  };
+}
+
+export const availableVariableIds = Array.from(variablesById.keys()).sort();
+export const availableCategoricalIds = Array.from(categoricalByVariable.keys()).sort();
+export const availableDistributionIds = Array.from(distributionsByVariable.keys()).sort();
+
+export function getMultipleChoiceVariableIds(prefix) {
+  const withUnderscore = prefix.endsWith("_") ? prefix : `${prefix}_`;
+  return availableCategoricalIds.filter((id) => id.startsWith(withUnderscore));
+}
+
+export const q3Items  = getMultipleChoiceVariableIds("Q3");
+export const q8Items  = getMultipleChoiceVariableIds("Q8"); 
+export const q16Items = getMultipleChoiceVariableIds("Q16"); 
+
+<BaseLayout title="[U25] Peer Engagement Report">
+
+# [U25] Peer Engagement Report
+
+<div class="toc">
+
+<h2>Inhaltsverzeichnis</h2>
+
+<ol>
+  <li>
+    <a href="#section-1-forschungsfragen">1. Forschungsfragen</a>
+  </li>
+  <li>
+    <a href="#section-2-soziodemografie">2. Wer engagiert sich als Peer bei [U25]? (Soziodemografische Daten)</a>
+    <ul>
+      <li><a href="#q2">Q2: Wie lange bist du schon bei [U25]?</a></li>
+      <li><a href="#q6">Q6: Hast du neben [U25] noch andere Ehrenämter?</a></li>
+      <li><a href="#q15">Q15: Zu welchem Standort gehörst du?</a></li>
+      <li><a href="#q16">Q16: Dein Geschlecht</a></li>
+      <li><a href="#q17">Q17: Dein Alter</a></li>
+      <li><a href="#q18">Q18: Was ist deine Haupttätigkeit?</a></li>
+      <li><a href="#q19">Q19: Ausbildung/Studium/Beruf im Bereich Soziales/Psychologie?</a></li>
+    </ul>
+  </li>
+  <li>
+    <a href="#section-3-motivation">3. Warum tun sie das? (Motivationsstrukturen)</a>
+    <ul>
+      <li><a href="#q8">Q8: Warum engagierst du dich bei [U25]?</a></li>
+      <li><a href="#motivation-corr">Korrelationsmatrix der Motivationen</a></li>
+      <li><a href="#q8-open">Q8: Offenes Textfeld</a></li>
+      <li><a href="#q10">Q10: Verbundenheit mit anderen Peers</a></li>
+      <li><a href="#gender-motivation">Gender × Motivation</a></li>
+      <li><a href="#study-motivation">Studium × Motivation</a></li>
+    </ul>
+  </li>
+  <li>
+    <a href="#section-4-akquise">4. Wie sind sie dazu gekommen? (Akquise-Wege)</a>
+    <ul>
+      <li><a href="#q3">Q3: Wie bist du zu [U25] gekommen?</a></li>
+      <li><a href="#akquise-beschaeftigung">Akquiseweg und aktuelle Beschäftigung</a></li>
+      <li><a href="#standort-akquise">Standort und Akquiseweg</a></li>
+    </ul>
+  </li>
+  <li>
+    <a href="#section-5-aufwand">5. Wie aufwändig ist das Engagement?</a>
+    <ul>
+      <li><a href="#q5">Q5: Wie geht es dir damit aktuell?</a></li>
+      <li><a href="#q7">Q7: Zeitaufwand pro Monat</a></li>
+    </ul>
+  </li>
+</ol>
+
+</div>
+
+---
+
+<h2 id="section-1-forschungsfragen">1. Forschungsfragen</h2>
+
+*Dieser Abschnitt enthält die Einleitung und Forschungsfragen der Studie.*
+
+---
+
+<h2 id="section-2-soziodemografie">2. Wer engagiert sich als Peer bei [U25]?</h2>
+
+Diese Sektion beschäftigt sich mit den soziodemografischen Merkmalen der Peers.
+
+<h3 id="q2">Q2: Wie lange bist du schon bei [U25]?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q2")}
+    metadata={getVariable("Q2")}
+    title="Dauer des Engagements"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q6">Q6: Hast du neben [U25] noch andere Ehrenämter?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q6")}
+    metadata={getVariable("Q6")}
+    title="Weitere Ehrenämter"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q15">Q15: Zu welchem Standort gehörst du?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q15")}
+    metadata={getVariable("Q15")}
+    title="Standort"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q16">Q16: Dein Geschlecht</h3>
+
+<VizBlock>
+  <BarChart
+    data={getMultipleChoiceCombined("Q16", q16Items)}
+    metadata={q16Items[0] ? getVariable(q16Items[0]) : undefined}
+    title="Geschlecht"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q17">Q17: Dein Alter</h3>
+
+<VizBlock>
+  <Histogram
+    data={getDistribution("Q17")}
+    metadata={getVariable("Q17")}
+    title="Altersverteilung"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q18">Q18: Was ist deine Haupttätigkeit?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q18")}
+    metadata={getVariable("Q18")}
+    title="Haupttätigkeit"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q19">Q19: Ausbildung/Studium/Beruf im Bereich Soziales/Psychologie?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q19")}
+    metadata={getVariable("Q19")}
+    title="Ausbildung im Bereich Soziales/Psychologie"
+    client:only="svelte"
+  />
+</VizBlock>
+
+---
+
+<h2 id="section-3-motivation">3. Warum tun sie das? (Motivationsstrukturen)</h2>
+
+Diese Sektion untersucht die Motivationen der Peers für ihr Engagement.
+
+<h3 id="q8">Q8: Warum engagierst du dich bei [U25]?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getMultipleChoiceCombined("Q8", q8Items)}
+    metadata={q8Items[0] ? getVariable(q8Items[0]) : undefined}
+    title="Motivationen (kombinierte Mehrfachauswahl)"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="motivation-corr">Korrelationsmatrix der Motivationen</h3>
+
+*Placeholder für Korrelationsmatrix*
+
+<h3 id="q8-open">Q8: Offenes Textfeld</h3>
+
+*Qualitative Antworten zu Motivationen*
+
+<h3 id="q10">Q10: Verbundenheit mit anderen Peers</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q10")}
+    metadata={getVariable("Q10")}
+    title="Verbundenheit mit anderen Peers"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="gender-motivation">Gender × Motivation</h3>
+
+*Placeholder für Kreuzanalyse*
+
+<h3 id="study-motivation">Studium × Motivation</h3>
+
+*Placeholder für Kreuzanalyse*
+
+---
+
+<h2 id="section-4-akquise">4. Wie sind sie dazu gekommen? (Akquise-Wege)</h2>
+
+Diese Sektion analysiert die Wege, über die Peers zu [U25] gekommen sind.
+
+<h3 id="q3">Q3: Wie bist du zu [U25] gekommen?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getMultipleChoiceCombined("Q3", q3Items)}
+    metadata={q3Items[0] ? getVariable(q3Items[0]) : undefined}
+    title="Akquisewege (Mehrfachauswahl kombiniert)"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="akquise-beschaeftigung">Akquiseweg und aktuelle Beschäftigung</h3>
+
+*Placeholder für Kreuzanalyse*
+
+<h3 id="standort-akquise">Standort und Akquiseweg</h3>
+
+*Placeholder für Kreuzanalyse*
+
+---
+
+<h2 id="section-5-aufwand">5. Wie aufwändig ist das Engagement?</h2>
+
+Diese Sektion betrachtet den Aufwand und die Belastung des Engagements.
+
+<h3 id="q5">Q5: Wie geht es dir damit aktuell?</h3>
+
+<VizBlock>
+  <BarChart
+    data={getCategorical("Q5")}
+    metadata={getVariable("Q5")}
+    title="Aktuelles Befinden"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<h3 id="q7">Q7: Zeitaufwand pro Monat</h3>
+
+<VizBlock>
+  <Histogram
+    data={getDistribution("Q7_zeit")}
+    metadata={getVariable("Q7_zeit")}
+    title="Zeitaufwand pro Monat (Stundenanzahl)"
+    client:only="svelte"
+  />
+</VizBlock>
+
+<style>{`
+.toc {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 2px solid #86185f;
+}
+
+.toc h2 {
+    margin-top: 0;
+    color: #86185f;
+}
+
+.toc ol {
+    margin-left: 1rem;
+    padding-left: 1.25rem;
+}
+
+.toc ul {
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.25rem;
+}
+
+.toc li {
+    margin: 0.15rem 0;
+}
+
+.toc a {
+    color: #86185f;
+    text-decoration: none;
+}
+
+.toc a:hover {
+    text-decoration: underline;
+}
+
+hr {
+    margin: 3rem 0;
+    border: none;
+    border-top: 2px solid #86185f;
+}
+`}</style>
+
+</BaseLayout>

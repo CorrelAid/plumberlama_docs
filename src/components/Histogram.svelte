@@ -118,14 +118,6 @@
                 }));
             }
 
-            // Helper function to trim text at word boundary
-            const trimText = (text, maxLength) => {
-                if (!text || text.length <= maxLength) return text;
-                const trimmed = text.slice(0, maxLength);
-                const lastSpace = trimmed.lastIndexOf(' ');
-                return (lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed) + '...';
-            };
-
             // Build statistics text
             const statsText = [
                 `n=${data.n}`,
@@ -147,49 +139,25 @@
             }
             subtitleParts.push(statsText);
 
-            const subtitle = subtitleParts.join('\n');
+            const subtitle = subtitleParts.join("\n");
+
+            const baseConfig = getBaseChartConfig();
 
             options = {
-                title: {
-                    text: metadata.label || title,
-                    subtext: subtitle,
-                    left: "center",
-                    textStyle: {
-                        fontSize: 14,
-                        fontWeight: 'bold'
-                    },
-                    subtextStyle: {
-                        fontSize: 11
+                title: getTitleConfig(metadata, title, subtitle),
+                ...baseConfig,
+                tooltip: getBarTooltipConfig((params) => {
+                    const bin = bins[params[0].dataIndex];
+                    if (bin.start === bin.end) {
+                        return `Value: ${bin.start}<br/>Count: ${bin.count}`;
+                    } else {
+                        return `Range: ${bin.start.toFixed(2)} - ${bin.end.toFixed(2)}<br/>Count: ${bin.count}`;
                     }
-                },
-                toolbox: {
-                    feature: {
-                        saveAsImage: {
-                            title: "Save as Image",
-                            pixelRatio: 2,
-                        },
-                    },
-                },
-                tooltip: {
-                    trigger: "axis",
-                    axisPointer: {
-                        type: "shadow",
-                    },
-                    formatter: (params) => {
-                        const bin = bins[params[0].dataIndex];
-                        if (bin.start === bin.end) {
-                            return `Value: ${bin.start}<br/>Count: ${bin.count}`;
-                        } else {
-                            return `Range: ${bin.start.toFixed(2)} - ${bin.end.toFixed(2)}<br/>Count: ${bin.count}`;
-                        }
-                    },
-                },
+                }),
                 grid: {
-                    left: "8%",
-                    right: "4%",
+                    ...baseConfig.grid,
                     bottom: "8%",
                     top: "25%",
-                    containLabel: true,
                 },
                 xAxis: {
                     type: "category",
@@ -208,19 +176,12 @@
                     nameGap: 40,
                 },
                 series: [
-                    {
-                        type: "bar",
-                        data: bins.map((b) => b.count),
-                        barWidth: "95%",
-                        itemStyle: {
-                            color: "#5470c6",
+                    getBarSeriesConfig(
+                        bins.map((b) => b.count),
+                        {
+                            barWidth: "95%",
                         },
-                        label: {
-                            show: true,
-                            position: "top",
-                            formatter: "{c}",
-                        },
-                    },
+                    ),
                 ],
             };
         }

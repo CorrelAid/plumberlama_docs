@@ -64,7 +64,7 @@ export const getBarSeriesConfig = (data: number[], options?: {
     data,
     barWidth: options?.barWidth || "60%",
     itemStyle: {
-        color: options?.color || "#5470c6",
+        color: options?.color || "#86185f",
     },
     label: {
         show: options?.showLabel ?? true,

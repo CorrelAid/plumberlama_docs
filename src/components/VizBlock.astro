@@ -1,0 +1,49 @@
+---
+const { title, description } = Astro.props;
+---
+
+<div class="viz-block">
+    {title && <h4 class="viz-title">{title}</h4>}
+    {description && <p class="viz-description">{description}</p>}
+    <div class="viz-content">
+        <slot />
+    </div>
+</div>
+
+<style>
+    .viz-block {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 2px 8px rgba(134, 24, 95, 0.1);
+        border: 1px solid rgba(134, 24, 95, 0.15);
+    }
+
+    .viz-title {
+        margin: 0 0 0.5rem 0;
+        color: #86185f;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .viz-description {
+        margin: 0 0 1rem 0;
+        color: #555;
+        font-size: 0.95rem;
+        font-style: italic;
+    }
+
+    .viz-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    /* Ensure charts fit nicely */
+    .viz-content :global(.app) {
+        width: 100% !important;
+        max-width: 100%;
+    }
+</style>

@@ -26,7 +26,6 @@ const { entries: allCategorical, categoricalError } =
 if (categoricalError) {
     console.error(categoricalError.message);
 }
-console.log(JSON.stringify(allCategorical, null, 2))
 
 const distributionsByVariable = new Map<string, any>(
     (allDistributions || []).map((d: any) => [

@@ -3,7 +3,7 @@
     import Histogram from "@/components/Histogram.svelte";
     import BarChart from "@/components/BarChart.svelte";
     let { title, type, data, metadata} = $props();
-    $inspect(data)
+
     let showModal = $state(false);
 </script>
 

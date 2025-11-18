@@ -1,6 +1,13 @@
 import type { LiveLoader } from 'astro/loaders';
 import pg from "@/db.ts";
 
+const table_prefix = import.meta.env.SURVEY_ID;
+
+// Build identifier objects for postgres tagged template
+const metadataTable      = pg(`${table_prefix}_metadata`);
+const distributionsTable = pg(`${table_prefix}_distributions`);
+const categoricalTable   = pg(`${table_prefix}_categorical`);
+
 interface Variable {
   question_id: number;
   group_id: number;
@@ -24,9 +31,8 @@ interface Variable {
 
 interface Distribution {
   variable_id: string;
-  values: number[]; // groupByd values (may be empty)
+  values: number[];
   load_counter: number;
-  // stats computed in DB
   n: number;
   mean: number | null;
   median: number | null;
@@ -35,17 +41,15 @@ interface Distribution {
   max: number | null;
 }
 
-
-
 /**
  * variableLoader: unchanged behaviour - returns metadata rows
  */
 export function variableLoader(config: { apiKey: string }): LiveLoader<Variable> {
   return {
     name: 'variableLoader',
-    loadCollection: async ({ filter }) => {
+    loadCollection: async () => {
       try {
-        const rows = await pg`SELECT * FROM test_survey_metadata`;
+        const rows = await pg`SELECT * FROM ${metadataTable}`;
 
         return {
           entries: rows.map((variables: any) => ({
@@ -61,17 +65,20 @@ export function variableLoader(config: { apiKey: string }): LiveLoader<Variable>
     },
     loadEntry: async ({ filter }) => {
       try {
-        const variable = await pg`SELECT * FROM test_survey_metadata WHERE id=${filter.id}`;
+        const [row] = await pg`
+          SELECT * FROM ${metadataTable}
+          WHERE id = ${filter.id}
+        `;
 
-        if (!variable) {
+        if (!row) {
           return {
             error: new Error('Variable not found'),
           };
         }
 
         return {
-          id: (variable as any).id,
-          data: variable as any,
+          id: row.id,
+          data: row as any,
         };
       } catch (error: any) {
         return {
@@ -82,12 +89,14 @@ export function variableLoader(config: { apiKey: string }): LiveLoader<Variable>
   };
 }
 
-
-const toNumberOrNull = (v: any): number | null => (v === null || v === undefined ? null : Number(v));
+const toNumberOrNull = (v: any): number | null =>
+  v === null || v === undefined ? null : Number(v);
 
 function rowToDistribution(r: any): Distribution {
   const valuesArray: number[] = (r.values ?? [])
-    .map((x: any) => (x === null ? NaN : (typeof x === 'number' ? x : Number(x))))
+    .map((x: any) =>
+      x === null ? NaN : typeof x === 'number' ? x : Number(x),
+    )
     .filter(Number.isFinite);
 
   return {
@@ -118,7 +127,7 @@ async function queryAllgroupBys(): Promise<any[]> {
       MAX(value::double precision) AS max,
       SUM(load_counter) AS load_counter,
       array_agg(value::double precision) FILTER (WHERE value IS NOT NULL) AS values
-    FROM test_survey_distributions
+    FROM ${distributionsTable}
     GROUP BY variable_id
   `) as any[];
 }
@@ -138,7 +147,7 @@ async function querygroupByFor(variableId: string): Promise<any[]> {
       MAX(value::double precision) AS max,
       SUM(load_counter) AS load_counter,
       array_agg(value::double precision) FILTER (WHERE value IS NOT NULL) AS values
-    FROM test_survey_distributions
+    FROM ${distributionsTable}
     WHERE variable_id = ${variableId}
     GROUP BY variable_id
   `) as any[];
@@ -210,7 +219,7 @@ async function queryAllCategorical(): Promise<any[]> {
       variable_id,
       value,
       SUM(CAST(count AS BIGINT)) as count
-    FROM test_survey_categorical
+    FROM ${categoricalTable}
     WHERE value IS NOT NULL
     GROUP BY variable_id, value
     ORDER BY variable_id, count DESC
@@ -223,7 +232,7 @@ async function queryCategoricalFor(variableId: string): Promise<any[]> {
       variable_id,
       value,
       SUM(CAST(count AS BIGINT)) as count
-    FROM test_survey_categorical
+    FROM ${categoricalTable}
     WHERE variable_id = ${variableId} AND value IS NOT NULL
     GROUP BY variable_id, value
     ORDER BY count DESC
@@ -235,13 +244,13 @@ function rowsToCategoricalData(rows: any[]): CategoricalData {
     return {
       variable_id: '',
       categories: [],
-      total_count: 0
+      total_count: 0,
     };
   }
 
-  const categories = rows.map(r => ({
+  const categories = rows.map((r) => ({
     value: String(r.value),
-    count: Number(r.count) || 0
+    count: Number(r.count) || 0,
   }));
 
   const total_count = categories.reduce((sum, cat) => sum + cat.count, 0);
@@ -249,7 +258,7 @@ function rowsToCategoricalData(rows: any[]): CategoricalData {
   return {
     variable_id: rows[0].variable_id,
     categories,
-    total_count
+    total_count,
   };
 }
 
@@ -261,7 +270,6 @@ export function categoricalLoader(_config: { apiKey: string }): LiveLoader<Categ
       try {
         const rows = await queryAllCategorical();
 
-        // Group by variable_id
         const byVariable = new Map<string, any[]>();
         for (const row of rows) {
           const varId = row.variable_id;
@@ -271,10 +279,12 @@ export function categoricalLoader(_config: { apiKey: string }): LiveLoader<Categ
           byVariable.get(varId)!.push(row);
         }
 
-        const entries = Array.from(byVariable.entries()).map(([varId, varRows]) => ({
-          id: varId,
-          data: rowsToCategoricalData(varRows)
-        }));
+        const entries = Array.from(byVariable.entries()).map(
+          ([varId, varRows]) => ({
+            id: varId,
+            data: rowsToCategoricalData(varRows),
+          }),
+        );
 
         return { entries };
       } catch (error: any) {
@@ -293,7 +303,7 @@ export function categoricalLoader(_config: { apiKey: string }): LiveLoader<Categ
         }
         return {
           id: filter.id as string,
-          data: rowsToCategoricalData(rows)
+          data: rowsToCategoricalData(rows),
         };
       } catch (error: any) {
         return {

@@ -36,7 +36,7 @@
             // Build subtitle with question text
             const subtitleParts = [];
             if (metadata.question_text) {
-                subtitleParts.push(`Question: "${metadata.question_text}"`);
+                subtitleParts.push(`Question: "${metadata.question_text}" (${metadata.question_type})`);
             }
             subtitleParts.push(`Total responses: ${data.total_count}`);
 
