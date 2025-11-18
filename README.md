@@ -1,11 +1,26 @@
 ## Setup
 
-```bash
-POSTGRES_URL="postgres://plumberlama:plumberlama_dev@localhost:5432/survey_data"
-SURVEY_ID="test_survey"
-```
+Create a `.env` file with the following variables:
 
+```bash
+POSTGRES_URL=""
+SURVEY_ID=""
+``` 
+
+## Development
 
 ```sh
 bunx --bun astro dev
+```
+
+## Build
+
+```sh
+bun run --bun astro build
+```
+
+## Preview
+
+```sh
+bun run --bun astro preview
 ```
