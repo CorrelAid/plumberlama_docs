@@ -116,13 +116,13 @@
             // Build statistics text
             const statsText = [
                 `n=${data.n}`,
-                data.mean !== null ? `mean=${data.mean.toFixed(0)}` : null,
+                data.mean !== null ? `mean=${data.mean.toFixed(1)}` : null,
                 data.median !== null
-                    ? `median=${data.median.toFixed(0)}`
+                    ? `median=${data.median.toFixed(1)}`
                     : null,
-                data.std_dev !== null ? `sd=${data.std_dev.toFixed(0)}` : null,
-                data.min !== null ? `min=${data.min.toFixed(0)}` : null,
-                data.max !== null ? `max=${data.max.toFixed(0)}` : null,
+                data.std_dev !== null ? `sd=${data.std_dev.toFixed(1)}` : null,
+                data.min !== null ? `min=${data.min.toFixed(1)}` : null,
+                data.max !== null ? `max=${data.max.toFixed(1)}` : null,
             ]
                 .filter(Boolean)
                 .join(" | ");
