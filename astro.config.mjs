@@ -3,7 +3,7 @@ import { defineConfig, envField } from "astro/config";
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import node from "@astrojs/node";
+import netlify from "@astrojs/netlify";
 
 import svelte from "@astrojs/svelte";
 import mdx from "@astrojs/mdx";
@@ -17,9 +17,7 @@ export default defineConfig({
 
     output: "server",
 
-    adapter: node({
-        mode: "standalone"
-    }),
+    adapter: netlify(),
 
     vite: {
         resolve: {
